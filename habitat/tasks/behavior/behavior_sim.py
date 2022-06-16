@@ -286,7 +286,6 @@ class BehaviorSim(HabitatSim):
         """
         :returns: The set base position and rotation
         """
-        print("In here: ")
         for attempt_i in range(max_attempts):
             start_pos = self.pathfinder.get_random_navigable_point()
 
@@ -303,13 +302,15 @@ class BehaviorSim(HabitatSim):
             )
             if not did_collide:
                 break
-        print(attempt_i)
-        print(self.robot.base_pos)
         if attempt_i == max_attempts - 1:
             rearrange_logger.warning(
                 f"Could not find a collision free start for {self.ep_info['episode_id']}"
             )
         return start_pos, start_rot
+
+    def set_robot_base(self, start_position, start_rotation):
+        self.robot.base_pos = mn.Vector3(start_position)
+        self.robot.base_rot = start_rotation[0]
 
     def _load_navmesh(self):
         # no need to load, just recompute

@@ -4,15 +4,12 @@
       "episode_id": 0,
       "scene_id": "data/scene_datasets/behavior/new_empty.glb",
       "start_position": [
-        0.0,
-        0,
+        -3,
+        1,
         0
       ],
       "start_rotation": [
-        0,
-        0,
-        0,
-        1
+        2.0
       ],
       "info": {},
       "objects": [

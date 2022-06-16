@@ -85,6 +85,7 @@ class BehaviorTask(NavigationTask):
                 action_instance.reset(episode=episode, task=self)
             self._is_episode_active = True
             # self._sim.set_robot_base_to_random_point()
+            self._sim.set_robot_base(episode.start_position, episode.start_rotation)
 
         self.prev_measures = self.measurements.get_metrics()
         self._targ_idx = 0

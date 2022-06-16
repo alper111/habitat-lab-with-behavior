@@ -1,0 +1,280 @@
+{
+  "episodes": [
+    {
+      "episode_id": 0,
+      "scene_id": "data/scene_datasets/behavior/new_empty.glb",
+      "start_position": [
+        0.0,
+        0,
+        0
+      ],
+      "start_rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "info": {},
+      "objects": [
+        {
+          "object_id": 0,
+          "object_name": "walls",
+          "category": "walls",
+          "room": "",
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/scenes/Rs_int/Rs_int_scaled_walls.urdf",
+          "start_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_rotation": [
+            -0.4999999701976776,
+            -0.4999999701976776,
+            -0.4999999701976776,
+            0.4999999701976776
+          ]
+        },
+        {
+          "object_id": 1,
+          "object_name": "floors",
+          "category": "floors",
+          "room": "",
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "floor.n.01_1:room_floor_living_room_0",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/scenes/Rs_int/Rs_int_scaled_floors.urdf",
+          "start_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_rotation": [
+            -0.4999999701976776,
+            -0.4999999701976776,
+            -0.4999999701976776,
+            0.4999999701976776
+          ]
+        },
+        {
+          "object_id": 2,
+          "object_name": "stool_4",
+          "category": "stool",
+          "room": [
+            "living_room_0"
+          ],
+          "states": {},
+          "fixed": false,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/stool/ottoman/ottoman_scaled_stool_4.urdf",
+          "start_position": [
+            -2.52186918258667,
+            0.23037753999233246,
+            -0.4593240022659302
+          ],
+          "start_rotation": [
+            -0.5032880902290344,
+            0.4966849684715271,
+            0.5033113956451416,
+            0.49667155742645264
+          ]
+        },
+        {
+          "object_id": 3,
+          "object_name": "table_lamp_22",
+          "category": "table_lamp",
+          "room": [
+            "living_room_0"
+          ],
+          "states": {},
+          "fixed": false,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/table_lamp/14127/14127_scaled_table_lamp_22.urdf",
+          "start_position": [
+            -3.915395736694336,
+            0.9999391436576843,
+            -0.40824368596076965
+          ],
+          "start_rotation": [
+            -0.5271433591842651,
+            0.47128233313560486,
+            0.4713105261325836,
+            0.5271424055099487
+          ]
+        },
+        {
+          "object_id": 4,
+          "object_name": "bed_28",
+          "category": "bed",
+          "room": [
+            "bedroom_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/bed/d7b9238af2efa963c862eec8232fff1e/d7b9238af2efa963c862eec8232fff1e_scaled_bed_28.urdf",
+          "start_position": [
+            -1.4111422095964739,
+            0.6766865702514199,
+            -3.0502555269190363
+          ],
+          "start_rotation": [
+            -0.500792920589447,
+            0.4992057681083679,
+            0.4992057681083679,
+            0.500792920589447
+          ]
+        },
+        {
+          "object_id": 5,
+          "object_name": "door_52",
+          "category": "door",
+          "room": [
+            "bedroom_0",
+            "bathroom_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/door/8994/8994_scaled_door_52.urdf",
+          "start_position": [
+            1.544397811732345,
+            1.059636321312612,
+            -2.58212514081443
+          ],
+          "start_rotation": [
+            -0.4999693036079407,
+            0.5000306367874146,
+            0.5000306367874146,
+            0.4999693036079407
+          ]
+        },
+        {
+          "object_id": 6,
+          "object_name": "window_53",
+          "category": "window",
+          "room": [
+            "bedroom_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/window/102896/102896_scaled_window_53.urdf",
+          "start_position": [
+            -0.9024828054254059,
+            1.5955209961999017,
+            -4.0165927849885055
+          ],
+          "start_rotation": [
+            0.0009017884731292725,
+            -0.7071061134338379,
+            -0.7071061134338379,
+            -0.0009017884731292725
+          ]
+        },
+        {
+          "object_id": 7,
+          "object_name": "door_54",
+          "category": "door",
+          "room": [
+            "lobby_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/door/8903/8903_scaled_door_54.urdf",
+          "start_position": [
+            3.5161621699940637,
+            1.0139078965005246,
+            1.0011310219293754
+          ],
+          "start_rotation": [
+            -0.4999999701976776,
+            -0.4999999701976776,
+            -0.4999999701976776,
+            0.4999999701976776
+          ]
+        },
+        {
+          "object_id": 8,
+          "object_name": "window_55",
+          "category": "window",
+          "room": [
+            "kitchen_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/window/103238/103238_scaled_window_55.urdf",
+          "start_position": [
+            3.5175774816084546,
+            1.4554861272227908,
+            -0.7105077150247554
+          ],
+          "start_rotation": [
+            -0.4999999701976776,
+            -0.4999999701976776,
+            -0.4999999701976776,
+            0.4999999701976776
+          ]
+        },
+        {
+          "object_id": 9,
+          "object_name": "window_56",
+          "category": "window",
+          "room": [
+            "living_room_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/window/103238/103238_scaled_window_56.urdf",
+          "start_position": [
+            -1.3323300583315747,
+            1.4554861272227908,
+            1.9369042713950102
+          ],
+          "start_rotation": [
+            -0.7071050405502319,
+            -0.0015306174755096436,
+            -0.0015306174755096436,
+            0.7071050405502319
+          ]
+        },
+        {
+          "object_id": 10,
+          "object_name": "window_57",
+          "category": "window",
+          "room": [
+            "living_room_0"
+          ],
+          "states": {},
+          "fixed": true,
+          "bddl_scope": "",
+          "object_template": "/home/ziang/Workspace/Github/ig_dataset/objects/window/103238/103238_scaled_window_57.urdf",
+          "start_position": [
+            -4.111016619332388,
+            1.4554861272227908,
+            -0.13234386059274486
+          ],
+          "start_rotation": [
+            -0.4999999701976776,
+            -0.4999999701976776,
+            -0.4999999701976776,
+            0.4999999701976776
+          ]
+        }
+      ],
+      "bddl_goals": [
+        [
+          "next_to",
+          3,
+          4
+        ]
+      ],
+      "activity": "assembling_gift_baskets"
+    }
+  ]
+}

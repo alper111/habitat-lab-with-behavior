@@ -84,8 +84,8 @@ _C.TASK.DESIRED_RESTING_POSITION = []
 _C.TASK.USE_MARKER_T = True
 _C.TASK.SUCCESS_STATE = 0.0
 # Measurements for composite tasks.
-_C.TASK.REWARD_MEASUREMENT = ""
-_C.TASK.SUCCESS_MEASUREMENT = ""
+_C.TASK.REWARD_MEASURET = ""
+_C.TASK.SUCCESS_MEASURE = ""
 # If true, does not care about navigability or collisions with objects when spawning
 # robot
 _C.TASK.EASY_INIT = False

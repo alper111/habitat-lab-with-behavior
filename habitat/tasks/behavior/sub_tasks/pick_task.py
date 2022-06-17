@@ -13,7 +13,7 @@ import numpy as np
 from habitat.core.dataset import Episode
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.rearrange_task import ADD_CACHE_KEY, RearrangeTask
-from habitat.tasks.rearrange.utils import (
+from habitat.tasks.behavior.utils import (
     CacheHelper,
     rearrange_collision,
     rearrange_logger,

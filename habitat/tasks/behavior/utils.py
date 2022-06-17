@@ -19,6 +19,7 @@ import quaternion
 import habitat_sim
 from habitat.core.logging import HabitatLogger
 from habitat_sim.physics import MotionType
+from habitat.sims.habitat_simulator.sim_utilities import get_ao_global_bb
 
 rearrange_logger = HabitatLogger(
     name="rearrange_task",
@@ -198,16 +199,41 @@ def convert_legacy_cfg(obj_list):
     return list(map(convert_fn, obj_list))
 
 
-def get_aabb(obj_id, sim, transformed=False):
-    obj = sim.get_rigid_object_manager().get_object_by_id(obj_id)
+def get_aabb(obj_id, sim, transformed=True):
+    obj = sim.get_articulated_object_manager().get_object_by_id(obj_id)
     if obj is None:
         return None
-    obj_node = obj.root_scene_node
-    obj_bb = obj_node.cumulative_bb
-    if transformed:
-        obj_bb = habitat_sim.geo.get_transformed_bb(
-            obj_node.cumulative_bb, obj_node.transformation
+    # obj_node = obj.root_scene_node
+    # TODO: test new scene node
+
+    # TODO: optimize, computes bb on the fly
+    link_ids = obj.get_link_ids()
+    sim.object_manual_bb[obj_id] = None
+    for link_id in link_ids:
+        link_node = obj.get_link_scene_node(link_id)
+        link_transformed_bb = habitat_sim.geo.get_transformed_bb(
+            link_node.cumulative_bb, link_node.transformation
         )
+        if sim.object_manual_bb[obj_id] is None:
+            sim.object_manual_bb[obj_id] = link_transformed_bb
+        else:
+            sim.object_manual_bb[obj_id] = mn.math.join(sim.object_manual_bb[obj_id], link_transformed_bb)
+            # bb_max = np.array([link_transformed_bb.max.x, link_transformed_bb.max.y, link_transformed_bb.max.z])
+            # bb_min = np.array([link_transformed_bb.min.x, link_transformed_bb.min.y, link_transformed_bb.min.z])
+            # original_max = np.array([sim.object_manual_bb[obj_id].max.x, sim.object_manual_bb[obj_id].max.y, sim.object_manual_bb[obj_id].max.z])
+            # original_min = np.array([sim.object_manual_bb[obj_id].min.x, sim.object_manual_bb[obj_id].min.y, sim.object_manual_bb[obj_id].min.z])
+            # new_max = np.maximum(bb_max, original_max)
+            # new_min = np.minimum(bb_min, original_min)
+            # sim.object_manual_bb[obj_id].max = mn.Vector3(new_max.tolist())
+            # sim.object_manual_bb[obj_id].min = mn.Vector3(new_min.tolist())
+    obj_bb = sim.object_manual_bb[obj_id]
+    # print("prev bb: ", obj_bb)
+    # print("new bb: ", get_ao_global_bb(obj))
+    # no need to transform again, already transformed
+    # if transformed:
+    #     obj_bb = habitat_sim.geo.get_transformed_bb(
+    #         obj_node.cumulative_bb, obj_node.transformation
+    #     )
     return obj_bb
 
 

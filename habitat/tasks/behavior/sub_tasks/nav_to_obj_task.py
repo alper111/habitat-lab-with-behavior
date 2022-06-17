@@ -25,7 +25,7 @@ from habitat.tasks.rearrange.multi_task.task_creator_utils import (
     create_task_object,
 )
 from habitat.tasks.rearrange.rearrange_task import ADD_CACHE_KEY, RearrangeTask
-from habitat.tasks.rearrange.utils import CacheHelper, rearrange_logger
+from habitat.tasks.behavior.utils import CacheHelper, rearrange_logger
 
 DYN_NAV_TASK_NAME = "RearrangeNavToObjTask-v0"
 

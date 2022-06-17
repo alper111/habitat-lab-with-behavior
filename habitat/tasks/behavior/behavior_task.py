@@ -13,7 +13,7 @@ from habitat.core.dataset import Episode
 from habitat.core.registry import registry
 from habitat.tasks.nav.nav import NavigationTask
 from habitat.tasks.behavior.behavior_sim import BehaviorSim
-from habitat.tasks.rearrange.utils import (
+from habitat.tasks.behavior.utils import (
     CollisionDetails,
     rearrange_collision,
     rearrange_logger,

@@ -7,9 +7,15 @@
 from typing import Any, Dict, List, Optional
 
 import magnum as mn
+import numpy as np
 
 import habitat_sim
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
+
+
+def swap_axes(x):
+    x[1], x[2] = x[2], x[1]
+    return x
 
 
 def register_custom_wireframe_box_template(
@@ -120,18 +126,38 @@ def get_bb_corners(
 
 def get_ao_global_bb(
     obj: habitat_sim.physics.ManagedArticulatedObject,
+    sim=None
 ) -> mn.Range3D:
     """
     Compute the cumulative bounding box of an ArticulatedObject by merging all link bounding boxes.
     """
     cumulative_global_bb = mn.Range3D()
-    for link_ix in range(-1, obj.num_links):
+    for link_ix in range(0, obj.num_links):
         link_node = obj.get_link_scene_node(link_ix)
         bb = link_node.cumulative_bb
         global_bb = habitat_sim.geo.get_transformed_bb(
             bb, link_node.transformation
         )
         cumulative_global_bb = mn.math.join(cumulative_global_bb, global_bb)
+    # swap bb axes
+    # cumulative_global_bb.max = swap_axes(cumulative_global_bb.max)
+    # cumulative_global_bb.min = swap_axes(cumulative_global_bb.min)
+    # mn.Quaternion.rotation(mn.Rad(-np.pi/2), np.array([1.0, 0.0, 0.0])) * mn.Quaternion.rotation(mn.Rad(-np.pi/2), np.array([0.0, 0.0, 1.0]))
+    # rot = mn.Quaternion.rotation(mn.Rad(np.pi/2), np.array([0.0, 0.0, 1.0])) * mn.Quaternion.rotation(mn.Rad(np.pi/2), np.array([1.0, 0.0, 0.0]))
+    # print(rot)
+    # transform
+    # transform = mn.Matrix4.rotation(mn.Rad(0.5), np.array([0.5, 0.5, 0.5]) / np.linalg.norm( np.array([0.5, 0.5, 0.5])))
+    cumulative_global_bb = habitat_sim.geo.get_transformed_bb(
+        cumulative_global_bb, obj.transformation
+    )
+    # one extra transformation
+    print(obj.handle)
+    print(obj.rotation.scalar)
+    if sim is not None:
+        if obj.object_id in sim.bb_rotation_correction and sim.bb_rotation_correction[obj.object_id]:
+            cumulative_global_bb = habitat_sim.geo.get_transformed_bb(
+                cumulative_global_bb, obj.transformation
+            )
     return cumulative_global_bb
 
 

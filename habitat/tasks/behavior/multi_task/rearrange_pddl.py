@@ -31,7 +31,7 @@ from habitat.tasks.rearrange.multi_task.task_creator_utils import (
 )
 from habitat.tasks.behavior.behavior_sim import BehaviorSim
 from habitat.tasks.behavior.behavior_task import BehaviorTask
-from habitat.tasks.rearrange.utils import rearrange_logger
+from habitat.tasks.behavior.utils import rearrange_logger
 
 if TYPE_CHECKING:
     from habitat.datasets.rearrange.rearrange_dataset import RearrangeDatasetV0

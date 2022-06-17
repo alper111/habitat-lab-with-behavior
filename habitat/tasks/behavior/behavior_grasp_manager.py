@@ -9,9 +9,10 @@ from typing import List, Optional, Tuple
 
 import magnum as mn
 import numpy as np
+from habitat_sim._ext.habitat_sim_bindings import ManagedArticulatedObject
 
 from habitat.config.default import Config
-from habitat.tasks.rearrange.utils import get_aabb
+from habitat.tasks.behavior.utils import get_aabb
 from habitat_sim.physics import (
     CollisionGroupHelper,
     CollisionGroups,
@@ -65,7 +66,7 @@ class BehaviorGraspManager:
         """
         ee_pos = self._sim.robot.ee_transform.translation
         if self._snapped_obj_id is not None and (
-            np.linalg.norm(ee_pos - self.snap_rigid_obj.translation)
+            np.linalg.norm(ee_pos - self.snap_articulated_obj.translation)
             >= self._config.HOLD_THRESH
         ):
             return True
@@ -115,12 +116,12 @@ class BehaviorGraspManager:
             obj_bb = get_aabb(self.snap_idx, self._sim)
             if obj_bb is not None:
                 if force:
-                    self.snap_rigid_obj.override_collision_group(
+                    self.snap_articulated_obj.override_collision_group(
                         CollisionGroups.Default
                     )
                 else:
                     self._leave_info = (
-                        self.snap_rigid_obj,
+                        self.snap_articulated_obj,
                         max(obj_bb.size_x(), obj_bb.size_y(), obj_bb.size_z()),
                     )
 
@@ -147,9 +148,9 @@ class BehaviorGraspManager:
         return self._snapped_marker_id
 
     @property
-    def snap_rigid_obj(self) -> ManagedRigidObject:
+    def snap_articulated_obj(self) -> ManagedArticulatedObject:
         """The grasped object instance."""
-        ret_obj = self._sim.get_rigid_object_manager().get_object_by_id(
+        ret_obj = self._sim.get_articulated_object_manager().get_object_by_id(
             self._snapped_obj_id
         )
         if ret_obj is None:
@@ -217,7 +218,7 @@ class BehaviorGraspManager:
         """
         Kinematically update held object to be within robot's grasp.
         """
-        self.snap_rigid_obj.transformation = self._sim.robot.ee_transform
+        self.snap_articulated_obj.transformation = self._sim.robot.ee_transform
 
     def snap_to_obj(self, snap_obj_id: int, force: bool = True) -> None:
         """Attempt to grasp an object, snapping/constraining it to the robot's end effector with 3 ball-joint constraints forming a fixed frame.
@@ -237,13 +238,18 @@ class BehaviorGraspManager:
             )
 
         self._snapped_obj_id = snap_obj_id
+        # if fixed base then don't grasp
+        if self._sim.object_fixed_base[self._snapped_obj_id]:
+            print("Can't snap to fixed based object: ", self._snapped_obj_id)
+            self._snapped_obj_id = None
+            return
         if force:
             # Set the transformation to be in the robot's hand already.
             self.update_object_to_grasp()
 
         # Set collision group to GraspedObject so that it doesn't collide
         # with the links of the robot.
-        self.snap_rigid_obj.override_collision_group(
+        self.snap_articulated_obj.override_collision_group(
             CollisionGroups.UserGroup7
         )
 

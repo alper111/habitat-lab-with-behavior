@@ -12,7 +12,7 @@ from gym import spaces
 from habitat.core.embodied_task import SimulatorTaskAction
 from habitat.core.registry import registry
 from habitat.tasks.behavior.behavior_sim import BehaviorSim
-from habitat.tasks.rearrange.utils import (
+from habitat.tasks.behavior.utils import (
     coll_link_name_matches,
     coll_name_matches,
 )
@@ -47,6 +47,7 @@ class MagicGraspAction(GripSimulatorTaskAction):
             to_target = np.linalg.norm(
                 ee_pos - scene_obj_pos[closest_obj_idx], ord=2
             )
+            print("Grip target distance: ", to_target, " threshold: ", self._config.GRASP_THRESH_DIST)
 
             if to_target < self._config.GRASP_THRESH_DIST:
                 self._sim.grasp_mgr.snap_to_obj(

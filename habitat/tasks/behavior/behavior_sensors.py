@@ -13,7 +13,7 @@ from habitat.core.registry import registry
 from habitat.core.simulator import Sensor, SensorTypes
 from habitat.tasks.nav.nav import PointGoalSensor
 from habitat.tasks.behavior.behavior_sim import BehaviorSim
-from habitat.tasks.rearrange.utils import (
+from habitat.tasks.behavior.utils import (
     CollisionDetails,
     batch_transform_point,
     rearrange_logger,

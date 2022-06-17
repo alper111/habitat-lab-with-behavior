@@ -14,7 +14,7 @@ from habitat.core.dataset import Episode
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.marker_info import MarkerInfo
 from habitat.tasks.rearrange.rearrange_task import RearrangeTask
-from habitat.tasks.rearrange.utils import rearrange_collision, rearrange_logger
+from habitat.tasks.behavior.utils import rearrange_collision, rearrange_logger
 from habitat.tasks.utils import get_angle
 
 

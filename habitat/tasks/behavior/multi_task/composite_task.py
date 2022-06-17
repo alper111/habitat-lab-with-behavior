@@ -23,7 +23,7 @@ from habitat.tasks.rearrange.multi_task.rearrange_pddl import (
     parse_func,
 )
 from habitat.tasks.behavior.behavior_task import BehaviorTask
-from habitat.tasks.rearrange.utils import rearrange_logger
+from habitat.tasks.behavior.utils import rearrange_logger
 
 
 @registry.register_task(name="BehaviorCompositeTask-v0")

@@ -15,7 +15,7 @@ from habitat.tasks.rearrange.rearrange_sensors import (
     RearrangeReward,
     RobotForce,
 )
-from habitat.tasks.rearrange.utils import rearrange_logger
+from habitat.tasks.behavior.utils import rearrange_logger
 
 
 @registry.register_measure

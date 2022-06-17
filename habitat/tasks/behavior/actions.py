@@ -18,13 +18,13 @@ from habitat.sims.habitat_simulator.actions import HabitatSimActions
 # flake8: noqa
 # These actions need to be imported since there is a Python evaluation
 # statement which dynamically creates the desired grip controller.
-from habitat.tasks.rearrange.grip_actions import (
+from habitat.tasks.behavior.grip_actions import (
     GripSimulatorTaskAction,
     MagicGraspAction,
     SuctionGraspAction,
 )
 from habitat.tasks.behavior.behavior_sim import BehaviorSim
-from habitat.tasks.rearrange.utils import rearrange_collision, rearrange_logger
+from habitat.tasks.behavior.utils import rearrange_collision, rearrange_logger
 
 
 @registry.register_task_action
@@ -81,7 +81,6 @@ class ArmAction(SimulatorTaskAction):
         self.arm_ctrlr = arm_controller_cls(
             *args, config=config, sim=sim, **kwargs
         )
-
         if self._config.GRIP_CONTROLLER is not None:
             grip_controller_cls = eval(self._config.GRIP_CONTROLLER)
             self.grip_ctrlr: Optional[
@@ -112,6 +111,7 @@ class ArmAction(SimulatorTaskAction):
         self, arm_action, is_last_action, grip_action=None, *args, **kwargs
     ):
         self.arm_ctrlr.step(arm_action)
+        print()
         if self.grip_ctrlr is not None and not self.disable_grip:
             self.grip_ctrlr.step(grip_action)
         if is_last_action:

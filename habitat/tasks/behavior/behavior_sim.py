@@ -18,17 +18,20 @@ from habitat.core.registry import registry
 from habitat.core.simulator import Observations
 from habitat.sims.habitat_simulator.habitat_simulator import HabitatSim
 from habitat_sim.utils.common import quat_from_coeffs, quat_to_magnum
+from habitat.sims.habitat_simulator.sim_utilities import get_all_object_ids, add_transformed_wire_box, add_wire_box
+from habitat.tasks.behavior.utils import get_aabb
 from habitat.tasks.behavior.marker_info import MarkerInfo
 from habitat.tasks.behavior.behavior_grasp_manager import (
     BehaviorGraspManager,
 )
-from habitat.tasks.rearrange.utils import (
+from habitat.tasks.behavior.utils import (
     IkHelper,
     get_aabb,
     is_pb_installed,
     make_render_only,
     rearrange_collision,
     rearrange_logger,
+    swap_axes
 )
 from habitat_sim.nav import NavMeshSettings
 from habitat_sim.physics import JointMotorSettings, MotionType
@@ -36,6 +39,21 @@ from habitat_sim.physics import JointMotorSettings, MotionType
 # flake8: noqa
 from habitat_sim.robots import FetchRobot, FetchRobotNoWheels
 from habitat_sim.sim import SimulatorBackend
+
+from habitat.tasks.behavior.object_states.sim_object_states import ObjectStates, get_equidistant_coordinate_planes, compute_adjacencies
+from habitat.tasks.behavior.object_states.next_to import NextTo
+from habitat.tasks.behavior.object_states.on_top import OnTop
+from habitat.tasks.behavior.object_states.inside import Inside
+from habitat.tasks.behavior.object_states.touching import Touching
+from habitat.tasks.behavior.object_states.under import Under
+from habitat.tasks.behavior.object_states.on_floor import OnFloor
+
+
+# TODO: move these to RLEnv
+import bddl
+from bddl.activity_base import HabitatBEHAVIORActivityInstance
+
+bddl.set_backend("Habitat")
 
 
 @registry.register_simulator(name="BehaviorSim-v0")
@@ -47,7 +65,6 @@ class BehaviorSim(HabitatSim):
     ref_handle_to_rigid_obj_id: Optional[Dict[str, int]]
 
     def __init__(self, config: Config):
-        print(config)
 
         super().__init__(config)
 
@@ -98,8 +115,34 @@ class BehaviorSim(HabitatSim):
 
         # BEHAVIOR customized info
         self.object_fixed_base = {}
+        self.object_bb = {}
         self.navmesh_settings = NavMeshSettings()
         self.navmesh_settings.set_defaults()
+        self.object_manual_bb = {}
+        self.object_scope = {}
+        self.object_ids_mapping = {}
+        self.object_ids = []
+        self.debug_bb_viz = []
+        self.bb_rotation_correction = {}
+        # initialize object kinematic states to empty
+        self.object_states = ObjectStates(self.object_ids)
+        self.link_id_to_object_id = {}
+        self.state_checkers = {}
+        # set object states checkers
+        self.state_checkers[NextTo] = NextTo(self)
+        self.state_checkers[OnTop] = OnTop(self)
+        self.state_checkers[Inside] = Inside(self)
+        self.state_checkers[Touching] = Touching(self)
+        self.state_checkers[Under] = Under(self)
+        self.state_checkers[OnFloor] = OnFloor(self)
+
+        self.performed_kinematic_step = False
+
+        self.objects_by_category = {}
+
+        # TODO: move these to RLEnv
+        self.bddl_checker = HabitatBEHAVIORActivityInstance(behavior_activity="simple_task", activity_definition=0, sim=self)
+        self.bddl_checker_result = None
 
     def _get_target_trans(self):
         """
@@ -174,6 +217,10 @@ class BehaviorSim(HabitatSim):
         SimulatorBackend.reset(self)
         for i in range(len(self.agents)):
             self.reset_agent(i)
+        # BEHAVIOR customized info
+        # initialize object kinematic states to empty
+        self.object_states = ObjectStates(self.object_ids)
+        self.performed_kinematic_step = False
         return None
 
     def reconfigure(self, config: Config):
@@ -332,13 +379,14 @@ class BehaviorSim(HabitatSim):
         self._max_island_size = max(self._island_sizes)
 
     def _clear_objects(self, should_add_objects: bool) -> None:
+        aom = self.get_articulated_object_manager()
         rom = self.get_rigid_object_manager()
 
-        # Clear all the rigid objects.
+        # Clear all the articulated objects.
         if should_add_objects:
             for scene_obj_id in self.scene_obj_ids:
-                if rom.get_library_has_id(scene_obj_id):
-                    rom.remove_object_by_id(scene_obj_id)
+                if aom.get_library_has_id(scene_obj_id):
+                    aom.remove_object_by_id(scene_obj_id)
             self.scene_obj_ids = []
 
         # Reset all marker visualization points
@@ -356,6 +404,18 @@ class BehaviorSim(HabitatSim):
         # Do not remove the articulated objects from the scene, these are
         # managed by the underlying sim.
         self.art_objs = []
+
+        if should_add_objects:
+            # reset various states
+            self.object_fixed_base = {}
+            self.object_bb = {}
+            self.object_manual_bb = {}
+            self.object_scope = {}
+            self.object_ids_mapping = {}
+            self.object_ids = []
+            self.debug_bb_viz = []
+            self.bb_rotation_correction = {}
+            self.objects_by_category = {}
 
     def _set_ao_states_from_ep(self, ep_info: Config) -> None:
         """
@@ -420,11 +480,31 @@ class BehaviorSim(HabitatSim):
             fixed = obj["fixed"]
             category = obj["category"]
             bddl_scope = obj["bddl_scope"]
+            bb = obj["bounding_box"]
             if should_add_objects:
                 if object_template[-5:] == ".urdf":
                     ao = aom.add_articulated_object_from_urdf(filepath=object_template, fixed_base=fixed, global_scale=1.0)
+                    self.object_fixed_base[ao.object_id] = fixed
+                    self.object_bb[ao.object_id] = bb
+                    self.object_scope[bddl_scope] = ao.object_id
+                    self.object_ids.append(ao.object_id)
+                    # TODO: check rotation correction for bounding box
+                    # if abs(abs(object_rot[3]) - 0.5) < 5e-2:
+                    #     self.bb_rotation_correction[ao.object_id] = True
+                    # else:
+                    #     self.bb_rotation_correction[ao.object_id] = False
+                    # initialize object category mapping
+                    if category not in self.objects_by_category:
+                        self.objects_by_category[category] = []
+                    self.objects_by_category[category].append(ao.object_id)
+                    link_dict = ao.link_object_ids
+                    for link_id in link_dict.keys():
+                        self.link_id_to_object_id[link_id] = ao.object_id
+
             else:
                 ao = aom.get_object_by_id(self.scene_obj_ids[i])
+
+
 
             # The saved matrices need to be flipped when reloading.
             # set object state
@@ -448,6 +528,84 @@ class BehaviorSim(HabitatSim):
 
             obj_counts[ao.handle] += 1
 
+        if should_add_objects:
+            # add robot object id for tracking
+            self.object_ids.append(self.robot.sim_obj.object_id)
+            link_dict = self.robot.sim_obj.link_object_ids
+            print("robot id: ", self.robot.sim_obj.object_id)
+            print(link_dict)
+            for link_id in link_dict.keys():
+                self.link_id_to_object_id[link_id] = self.robot.sim_obj.object_id
+            self.link_id_to_object_id[self.robot.sim_obj.object_id] = self.robot.sim_obj.object_id
+
+        self.object_ids_mapping = get_all_object_ids(self)
+        # initialize object kinematic states
+        self.object_states = ObjectStates(self.object_ids)
+        # update aabb info
+        for obj_id in self.object_ids:
+            get_aabb(obj_id, self)
+
+    def kinematics_step(self):
+        aom = self.get_articulated_object_manager()
+        # update adjacency list of all objects
+        coordinate_planes = get_equidistant_coordinate_planes(n_planes=30)
+        # TODO: update to use habitat sleep mechanism. ignoring moved objects for now
+        # moved_objects = []
+        # for handle in self.object_handles:
+        #     obj = self.get_articulated_object_manager().get_object_by_handle(handle)
+        #     if obj is None:
+        #         obj = self.get_rigid_object_manager().get_object_by_handle(handle)
+        #     if obj.translation != self.object_states.get_state(handle, "prev_translation") or obj.rotation != self.object_states.get_state(handle, "prev_rotation"):
+        #         moved_objects.append(handle)
+        # print("Moved:", self.object_handles)
+        touching_dict = {}
+        for obj_id in self.object_ids:
+            horizontal_adjacency = compute_adjacencies(self, obj_id, coordinate_planes.reshape(-1, 3), max_distance=1.0)
+            vertical_adjacency = compute_adjacencies(self, obj_id, np.array([[0, 1, 0]]), max_distance=5.0)
+            self.object_states.update_state(obj_id, "horizontal_adjacency_by_axis", horizontal_adjacency)
+            self.object_states.update_state(obj_id, "vertical_adjacency_by_axis", vertical_adjacency)
+            # clear touching
+            touching_dict[obj_id] = []
+            # update transform
+            # obj = aom.get_object_by_id(id)
+            # self.object_states.update_state(obj_id, "prev_translation", obj.translation)
+            # self.object_states.update_state(obj_id, "prev_rotation", obj.rotation)
+        # update touching
+        contact_points = self.get_physics_contact_points()
+
+        for contact_point in contact_points:
+            id_1 = contact_point.object_id_a
+            id_2 = contact_point.object_id_b
+            touching_dict[id_1].append(id_2)
+            touching_dict[id_2].append(id_1)
+            # todo: update touching based on whether objects moved
+
+        # update state
+        for obj_id in self.object_ids:
+            self.object_states.update_state(obj_id, "touching", list(set(touching_dict[obj_id])))
+        print("All ids: ", self.object_ids)
+        print("object_states:", self.object_states.object_states)
+        print(self.object_ids_mapping)
+        for obj_id in self.object_ids:
+            handle = aom.get_object_by_id(obj_id).handle
+            hor_adj = self.object_states.get_state(obj_id, "horizontal_adjacency_by_axis")
+            vert_adj = self.object_states.get_state(obj_id, "vertical_adjacency_by_axis")
+            touching = self.object_states.get_state(obj_id, "touching")
+            print("+==========================")
+            print(handle)
+            print("\tHorizontal: ", [aom.get_object_by_id(z).handle for x in hor_adj for y in x for z in y])
+            print("\tVertical: ", [aom.get_object_by_id(z).handle for x in vert_adj for y in x for z in y])
+            print("\tTouching: ", [aom.get_object_by_id(x).handle for x in touching])
+        # TODO: move to RLEnv
+        print(self.check_task_success)
+        self.performed_kinematic_step = True
+
+    def check_task_success(self):
+        assert self.performed_kinematic_step == True
+        # check bddl success
+        self.bddl_checker_result = self.bddl_checker.check_success()
+        print("bddl result: ", self.bddl_checker_result)
+        return self.bddl_checker_result
 
     def _create_obj_viz(self, ep_info: Config):
         """
@@ -576,35 +734,52 @@ class BehaviorSim(HabitatSim):
 
     def step(self, action: Union[str, int]) -> Observations:
         # print("Agent state: ", self.get_agent_state())
-        print("Robot state: ", self.robot.base_pos)
+        aom = self.get_articulated_object_manager()
         rom = self.get_rigid_object_manager()
 
         if self.habitat_config.DEBUG_RENDER:
-            rom = self.get_rigid_object_manager()
-            self._try_acquire_context()
+            for obj_id in self.debug_bb_viz:
+                rom.remove_object_by_id(obj_id)
+            self.debug_bb_viz = []
+            for obj_id in self.object_ids:
+                bb = self.object_manual_bb[obj_id]
+
+                if bb is not None:
+                    transform = mn.Matrix4()
+                    # transform.translation = obj.root_scene_node.translation
+                    transform.translation = mn.Vector3(np.array([bb.max.x + bb.min.x, bb.max.y + bb.min.y, bb.max.z + bb.min.z]) / 2.0)
+                    bb_obj = add_transformed_wire_box(self, bb.size()/2,  transform)
+                    # bb_obj = add_wire_box(self, bb.size()/2.0, bb.center(), attach_to=obj.root_scene_node)
+                    self.debug_bb_viz.append(bb_obj.object_id)
+            # rom = self.get_rigid_object_manager()
+            # self._try_acquire_context()
             # Don't draw bounding boxes over target objects.
-            for obj_handle, _ in self._targets.items():
-                self.set_object_bb_draw(
-                    False, rom.get_object_by_handle(obj_handle).object_id
-                )
+            # for obj_handle, _ in self._targets.items():
+            #     self.set_object_bb_draw(
+            #         False, rom.get_object_by_handle(obj_handle).object_id
+            #     )
+            # for obj_id in self.object_ids_mapping.keys():
+                # self.set_object_bb_draw(
+                #     True, obj_id
+                # )
 
-            # Remove viz objects
-            for obj in self._viz_objs.values():
-                if obj is not None and rom.get_library_has_id(obj.object_id):
-                    rom.remove_object_by_id(obj.object_id)
-            self._viz_objs = {}
-
+            # # Remove viz objects
+            # for obj in self._viz_objs.values():
+            #     if obj is not None and rom.get_library_has_id(obj.object_id):
+            #         rom.remove_object_by_id(obj.object_id)
+            # self._viz_objs = {}
+            #
             # Remove all visualized positions
             add_back_viz_objs = {}
-            for name, viz_id in self.viz_ids.items():
-                if viz_id is None:
-                    continue
-                viz_obj = rom.get_object_by_id(viz_id)
-                before_pos = viz_obj.translation
-                rom.remove_object_by_id(viz_id)
-                r = self._viz_handle_to_template[viz_id]
-                add_back_viz_objs[name] = (before_pos, r)
-            self.viz_ids = defaultdict(lambda: None)
+            # for name, viz_id in self.viz_ids.items():
+            #     if viz_id is None:
+            #         continue
+            #     viz_obj = rom.get_object_by_id(viz_id)
+            #     before_pos = viz_obj.translation
+            #     rom.remove_object_by_id(viz_id)
+            #     r = self._viz_handle_to_template[viz_id]
+            #     add_back_viz_objs[name] = (before_pos, r)
+            # self.viz_ids = defaultdict(lambda: None)
 
         self.grasp_mgr.update()
         if self.robot is not None and self.habitat_config.UPDATE_ROBOT:
@@ -623,6 +798,13 @@ class BehaviorSim(HabitatSim):
                 self.internal_step(-1, update_robot=False)
             self._prev_sim_obs = self.get_sensor_observations()
             obs = self._sensor_suite.get_observations(self._prev_sim_obs)
+
+        # update aabb info
+        for obj_id in self.object_ids:
+            get_aabb(obj_id, self)
+
+        # perform kinematics step
+        self.kinematics_step()
 
         if self.habitat_config.NEEDS_MARKERS:
             self._update_markers()

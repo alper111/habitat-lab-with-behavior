@@ -1,3 +1,8 @@
+# About this fork!
+I am trying to integrate [BEHAVIOR](https://stanfordvl.github.io/behavior/index.html) dataset/scenes to habitat-lab. [Ziang Liu](https://github.com/RealZiangLiu) already created [their fork](https://github.com/RealZiangLiu/habitat-lab-behavior) for [their paper](https://arxiv.org/abs/2206.06489). This fork merges the recent changes in habitat-lab with Ziang's fork.
+
+---
+
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-lab.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-lab)
 [![codecov](https://codecov.io/gh/facebookresearch/habitat-lab/branch/main/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-lab)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-lab/blob/main/LICENSE)
